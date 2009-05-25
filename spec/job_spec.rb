@@ -118,6 +118,20 @@ describe Delayed::Job do
     Delayed::Job.first.run_at.should be_close(rerun, 1)
   end
 
+  it "should execute a finite number of times when given executions when recurring" do
+    Delayed::Job.recurring SimpleJob.new, 0, Delayed::Job.db_time_now, 0.hours, 4
+
+    job = Delayed::Job.find(:first)
+    Delayed::Job.work_off(1)
+    Delayed::Job.first.executions_left.should == 3
+    Delayed::Job.work_off(1)
+    Delayed::Job.first.executions_left.should == 2
+    Delayed::Job.work_off(1)
+    Delayed::Job.first.executions_left.should == 1
+    Delayed::Job.work_off(1)
+    Delayed::Job.count.should == 0
+  end
+
   it "should raise an DeserializationError when the job class is totally unknown" do
 
     job = Delayed::Job.new

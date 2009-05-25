@@ -46,7 +46,7 @@ describe 'random ruby objects' do
   end
 
   it "should raise a ArgumentError if send_later is called but the target method doesn't exist" do
-    lambda { RandomRubyObject.new.send_later(:method_that_deos_not_exist) }.should raise_error(NoMethodError)
+    lambda { RandomRubyObject.new.send_later(:method_that_does_not_exist) }.should raise_error(NoMethodError)
   end
 
   it "should add a new entry to the job table when send_later is called on it" do

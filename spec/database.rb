@@ -23,8 +23,9 @@ ActiveRecord::Schema.define do
     table.string   :locked_by
     table.datetime :failed_at
     table.string   :description
-    table.boolean  "recur",    :default => false
-    table.integer  "period",   :limit => 11    
+    table.boolean  :recur,    :default => false
+    table.integer  :period,   :limit => 11
+    table.integer  :executions_left
     table.timestamps
   end
 

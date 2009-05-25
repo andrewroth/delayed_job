@@ -14,6 +14,7 @@ It is a direct extraction from Shopify where the job table is responsible for a 
 
 h2. Changes
                                             
+* 1.8 Added recurring tasks with option to execute a certain number of times and with a given period in between each run.
 * 1.7 Added failed_at column which can optionally be set after a certain amount of failed job attempts. By default failed job attempts are destroyed after about a month. 
 * 1.6 Renamed locked_until to locked_at. We now store when we start a given job instead of how long it will be locked by the worker. This allows us to get a reading on how long a job took to execute.                    
 * 1.5 Job runners can now be run in parallel. Two new database columns are needed: locked_until and locked_by. This allows us to use pessimistic locking, which enables us to run as many worker processes as we need to speed up queue processing.
@@ -33,8 +34,9 @@ The library evolves around a delayed_jobs table which looks as follows:
     table.datetime :failed_at
     table.string   :locked_by
     table.string   :description
-    table.boolean  "recur",    :default => false
-    table.integer  "period",   :limit => 11    
+    table.boolean  :recur,      :default => false
+    table.integer  :period,     :limit => 11    
+    table.integer  :executions_left
     table.timestamps
   end
   
@@ -58,7 +60,7 @@ There is also a second way to get jobs in the queue: send_later.
 
 And another way: recur_later.  This schedules a recurring job to start at time and repeat every period.  
   
-  BatchImporter.new(Shop.find(1)).recur_later(:import_massive_csv, description, time, period, priority, massive_csv)
+  BatchImporter.new(Shop.find(1)).recur_later(:import_massive_csv, description, time, period, executions_left, priority, massive_csv)
 
 This will simply create a Delayed::PerformableMethod job in the jobs table which serializes all the parameters you pass to it. There are some special smarts for active record objects
 which are stored as their text representation and loaded from the database fresh when the job is actually run later.

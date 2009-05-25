@@ -97,11 +97,13 @@ module Delayed
     
     #This provides a method of "scheduling"
     #start_time is when the job will first run, the period dictates when it will run again after that
-    def self.recurring(object, priority = 0, start_time = db_time_now, period = 24.hours)
+    #executions_left dictates how many times it will run, or use -1 to indicate infinite repeats.  by default
+    #it is infinite (-1)
+    def self.recurring(object, priority = 0, start_time = db_time_now, period = 24.hours, executions_left = -1)
       unless object.respond_to?(:perform)
         raise ArgumentError, 'Cannot enqueue items which do not respond to perform'
       end
-      Job.create(:payload_object => object, :priority => priority.to_i, :run_at => start_time, :recur => true, :period => period)    
+      Job.create(:payload_object => object, :priority => priority.to_i, :run_at => start_time, :recur => true, :period => period, :executions_left => executions_left) 
     end
      
     def self.find_available(limit = 5, max_run_time = MAX_RUN_TIME)
@@ -143,9 +145,10 @@ module Delayed
           job.lock_exclusively!(max_run_time, worker_name)
           runtime =  Benchmark.realtime do
             invoke_job(job.payload_object, &block)
-            if job.recur == true
+            if job.recur == true && (job.executions_left > 1 || job.executions_left == -1)
               run = job.run_at + job.period
-              job.update_attributes(:run_at => run)
+              executions_left = job.executions_left == -1 ? -1 : job.executions_left - 1
+              job.update_attributes(:run_at => run, :executions_left => executions_left)
               job.unlock
               job.save
             else
